@@ -1654,4 +1654,3 @@ async function scheduleWeeklyMeetings() {
     }
     if (createdCount > 0) alert(`Successfully scheduled ${createdCount} calls for this week in Google Calendar!`);
 }
-
