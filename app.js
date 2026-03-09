@@ -130,74 +130,104 @@ const emptyProjectData = {
     activityLog: []
 };
 
-let projectData = JSON.parse(localStorage.getItem('proTrackData'));
+// Initialize Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyB6ls1zH6PWEQTExiSjSh65JZHDGh4wTvc",
+    authDomain: "protrack-e8f7c.firebaseapp.com",
+    projectId: "protrack-e8f7c",
+    storageBucket: "protrack-e8f7c.firebasestorage.app",
+    messagingSenderId: "869333988176",
+    appId: "1:869333988176:web:49d1b22ab0e591ec633255"
+};
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const dbRef = database.ref('proTrackData');
 
-// If absolutely no local storage, start fresh
-if (!projectData) {
-    projectData = JSON.parse(JSON.stringify(emptyProjectData));
-}
+let projectData = JSON.parse(JSON.stringify(emptyProjectData)); // default starting point while loading
 
-// Migration script: Overwrite the active sub-phases with the newly updated defaultProjectData texts
-// to guarantee the user's view matches the latest specifications directly
-if (projectData && projectData.phases) {
-    // Preserve statuses where possible, but overwrite text
-    [0, 1, 2].forEach(phaseIndex => {
-        const defaultList = defaultProjectData.phases[phaseIndex].subPhases;
-        let activeList = projectData.phases[phaseIndex].subPhases;
+// Listen for Realtime Database changes
+dbRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        projectData = data;
 
-        defaultList.forEach(defCard => {
-            const existing = activeList.find(sp => sp.id === defCard.id);
-            if (existing) {
-                existing.title = defCard.title;
-                existing.timeline = defCard.timeline;
-                existing.keyResponsibility = defCard.keyResponsibility;
-                existing.participants = defCard.participants;
-                existing.agenda = defCard.agenda;
+        // Execute migrations on incoming data if necessary to ensure schema is correct
+        runDataMigrations();
+
+        // Only re-render if the app is already visible (user logged in)
+        if (currentState.currentUser && !document.getElementById('app').classList.contains('hidden')) {
+            if (currentState.activePhaseId) {
+                navigateToPhase(currentState.activePhaseId);
             } else {
-                activeList.push(JSON.parse(JSON.stringify(defCard)));
+                renderDashboard();
             }
-        });
-
-        // Sort activeList just to keep 1A, 1B, etc in order
-        activeList.sort((a, b) => a.id.localeCompare(b.id));
-    });
-    localStorage.setItem('proTrackData', JSON.stringify(projectData));
-}
-
-// Migration script to rename Pre-production/Production phases for existing users so there is no confusion with Video Tracker
-if (projectData && (projectData.phases[0].title === 'Pre-production' || projectData.phases[0].title === 'Pre Production')) {
-    projectData.phases[0].title = 'Planning';
-    projectData.phases[1].title = 'Execution';
-    projectData.phases[2].title = 'Review';
-
-    // Save these changes back immediately
-    localStorage.setItem('proTrackData', JSON.stringify(projectData));
-}
-
-// Migration script to add Advanced Logging specific arrays to older data schemas
-if (projectData) {
-    if (!projectData.activityLog) projectData.activityLog = [];
-
-    // Clean up old video objects that might have the old fields, and add notes
-    if (projectData.videos) {
-        projectData.videos.forEach(vid => {
-            if (vid.scriptSheetUrl !== undefined) delete vid.scriptSheetUrl;
-            if (vid.editSheetUrl !== undefined) delete vid.editSheetUrl;
-            if (vid.scriptLogs !== undefined) delete vid.scriptLogs;
-            if (vid.editLogs !== undefined) delete vid.editLogs;
-            if (vid.notes === undefined) vid.notes = '';
-        });
+            updateOverallProgress();
+        }
+    } else {
+        // Database is empty, initialize it with default template
+        projectData = JSON.parse(JSON.stringify(emptyProjectData));
+        saveData();
     }
+});
 
-    // Strip out the global properties entirely if they exist
-    if (projectData.globalScriptSheetUrl !== undefined) delete projectData.globalScriptSheetUrl;
-    if (projectData.globalEditSheetUrl !== undefined) delete projectData.globalEditSheetUrl;
+function runDataMigrations() {
 
-    localStorage.setItem('proTrackData', JSON.stringify(projectData));
+    // Migration script: Overwrite the active sub-phases with the newly updated defaultProjectData texts
+    // to guarantee the user's view matches the latest specifications directly
+    if (projectData && projectData.phases) {
+        // Preserve statuses where possible, but overwrite text
+        [0, 1, 2].forEach(phaseIndex => {
+            const defaultList = defaultProjectData.phases[phaseIndex].subPhases;
+            let activeList = projectData.phases[phaseIndex].subPhases;
+
+            defaultList.forEach(defCard => {
+                const existing = activeList.find(sp => sp.id === defCard.id);
+                if (existing) {
+                    existing.title = defCard.title;
+                    existing.timeline = defCard.timeline;
+                    existing.keyResponsibility = defCard.keyResponsibility;
+                    existing.participants = defCard.participants;
+                    existing.agenda = defCard.agenda;
+                } else {
+                    activeList.push(JSON.parse(JSON.stringify(defCard)));
+                }
+            });
+
+            // Sort activeList just to keep 1A, 1B, etc in order
+            activeList.sort((a, b) => a.id.localeCompare(b.id));
+        });
+
+        // Migration script to rename Pre-production/Production phases for existing users so there is no confusion with Video Tracker
+        if (projectData.phases[0].title === 'Pre-production' || projectData.phases[0].title === 'Pre Production') {
+            projectData.phases[0].title = 'Planning';
+            projectData.phases[1].title = 'Execution';
+            projectData.phases[2].title = 'Review';
+        }
+
+        // Migration script to add Advanced Logging specific arrays to older data schemas
+        if (!projectData.activityLog) projectData.activityLog = [];
+
+        // Clean up old video objects that might have the old fields, and add notes
+        if (projectData.videos) {
+            projectData.videos.forEach(vid => {
+                if (vid.scriptSheetUrl !== undefined) delete vid.scriptSheetUrl;
+                if (vid.editSheetUrl !== undefined) delete vid.editSheetUrl;
+                if (vid.scriptLogs !== undefined) delete vid.scriptLogs;
+                if (vid.editLogs !== undefined) delete vid.editLogs;
+                if (vid.notes === undefined) vid.notes = '';
+            });
+        }
+
+        // Strip out the global properties entirely if they exist
+        if (projectData.globalScriptSheetUrl !== undefined) delete projectData.globalScriptSheetUrl;
+        if (projectData.globalEditSheetUrl !== undefined) delete projectData.globalEditSheetUrl;
+    }
 }
 
 function saveData() {
-    localStorage.setItem('proTrackData', JSON.stringify(projectData));
+    dbRef.set(projectData).catch((error) => {
+        console.error("Firebase sync error:", error);
+    });
 }
 
 // Global Activity Logger
