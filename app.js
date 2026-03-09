@@ -677,7 +677,7 @@ function renderActivityLog() {
     DOM.pageSubtitle.textContent = 'Master record of all system activity';
 
     let html = `
-        < div style = "background-color: var(--bg-primary); border-radius: var(--radius-md); padding: 20px; border: 1px solid var(--border-subtle); max-width: 800px; margin: 0 auto;" >
+        <div style="background-color: var(--bg-primary); border-radius: var(--radius-md); padding: 20px; border: 1px solid var(--border-subtle); max-width: 800px; margin: 0 auto;">
             <h2 style="margin-bottom: 20px; font-size: 1.25rem;">Recent Activity</h2>
     `;
 
