@@ -614,7 +614,7 @@ function renderVideoDashboard() {
 
     let html = `
         <!-- Circular Dashboard -->
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 32px; margin-bottom: 28px; flex-wrap: wrap;">
+            <div class="video-dashboard-grid" style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 32px; margin-bottom: 28px;">
                 <!-- SVG Donut -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
                     <svg width="180" height="180" viewBox="0 0 180 180">
