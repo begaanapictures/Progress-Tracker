@@ -130,7 +130,9 @@ const emptyProjectData = {
     activityLog: []
 };
 
-// Initialize Firebase
+// ==========================================
+// FIREBASE CONFIGURATION & INIT
+// ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyB6ls1zH6PWEQTExiSjSh65JZHDGh4wTvc",
     authDomain: "protrack-e8f7c.firebaseapp.com",
@@ -140,117 +142,19 @@ const firebaseConfig = {
     messagingSenderId: "869333988176",
     appId: "1:869333988176:web:49d1b22ab0e591ec633255"
 };
+
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const dbRef = database.ref('proTrackData');
+const db = firebase.database();
+const DB_REF = 'protrack/data'; // path inside the database
 
-let projectData = JSON.parse(JSON.stringify(emptyProjectData)); // default starting point while loading
-let isLocalSave = false; // Flag to prevent UI flashing on our own saves
+// In-memory project state (always the latest loaded from Firebase)
+let projectData = JSON.parse(JSON.stringify(emptyProjectData));
 
-// Load data once on initial startup, then listen for external changes
-dbRef.once('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        projectData = data;
-        runDataMigrations();
-    } else {
-        // Database is empty - initialize with defaults and save
-        projectData = JSON.parse(JSON.stringify(emptyProjectData));
-        isLocalSave = true;
-        setTimeout(() => { isLocalSave = false; }, 2000);
-        dbRef.set(projectData);
-    }
-}).then(() => {
-    // After initial load, listen for changes from OTHER devices only
-    dbRef.on('value', (snapshot) => {
-        if (isLocalSave) return; // Skip — we triggered this ourselves
-
-        const data = snapshot.val();
-        if (!data) return;
-
-        projectData = data;
-        runDataMigrations();
-
-        // Only re-render if the user is already logged in and watching the app
-        if (currentState.currentUser && !document.getElementById('app').classList.contains('hidden')) {
-            if (currentState.activePhaseId === 'videos') {
-                renderVideosView();
-            } else if (currentState.activePhaseId) {
-                renderPhase(currentState.activePhaseId);
-            } else {
-                renderDashboard();
-            }
-            updateOverallProgress();
-        }
-    });
-});
-
-function runDataMigrations() {
-
-    // Migration script: Overwrite the active sub-phases with the newly updated defaultProjectData texts
-    // to guarantee the user's view matches the latest specifications directly
-    if (projectData && projectData.phases) {
-        // Preserve statuses where possible, but overwrite text
-        [0, 1, 2].forEach(phaseIndex => {
-            const defaultList = defaultProjectData.phases[phaseIndex].subPhases;
-            let activeList = projectData.phases[phaseIndex].subPhases;
-
-            defaultList.forEach(defCard => {
-                const existing = activeList.find(sp => sp.id === defCard.id);
-                if (existing) {
-                    existing.title = defCard.title;
-                    existing.timeline = defCard.timeline;
-                    existing.keyResponsibility = defCard.keyResponsibility;
-                    existing.participants = defCard.participants;
-                    existing.agenda = defCard.agenda;
-                } else {
-                    activeList.push(JSON.parse(JSON.stringify(defCard)));
-                }
-            });
-
-            // Sort activeList just to keep 1A, 1B, etc in order
-            activeList.sort((a, b) => a.id.localeCompare(b.id));
-        });
-
-        // Migration script to rename Pre-production/Production phases for existing users so there is no confusion with Video Tracker
-        if (projectData.phases[0].title === 'Pre-production' || projectData.phases[0].title === 'Pre Production') {
-            projectData.phases[0].title = 'Planning';
-            projectData.phases[1].title = 'Execution';
-            projectData.phases[2].title = 'Review';
-        }
-
-        // Migration script to add Advanced Logging specific arrays to older data schemas
-        if (!projectData.activityLog) projectData.activityLog = [];
-
-        // Clean up old video objects that might have the old fields, and add notes
-        if (projectData.videos) {
-            projectData.videos.forEach(vid => {
-                if (vid.scriptSheetUrl !== undefined) delete vid.scriptSheetUrl;
-                if (vid.editSheetUrl !== undefined) delete vid.editSheetUrl;
-                if (vid.scriptLogs !== undefined) delete vid.scriptLogs;
-                if (vid.editLogs !== undefined) delete vid.editLogs;
-                if (vid.notes === undefined) vid.notes = '';
-            });
-        }
-
-        // Strip out the global properties entirely if they exist
-        if (projectData.globalScriptSheetUrl !== undefined) delete projectData.globalScriptSheetUrl;
-        if (projectData.globalEditSheetUrl !== undefined) delete projectData.globalEditSheetUrl;
-    }
-}
-
+// Save the full project state to Firebase
 function saveData() {
-    isLocalSave = true; // Set flag right before writing to DB
-
-    // Clear the flag after a short delay, to ensure local 'on(value)' events pass through while true
-    setTimeout(() => {
-        isLocalSave = false;
-    }, 1000);
-
-    dbRef.set(projectData).catch((error) => {
-        console.error("Firebase sync error:", error);
-    });
+    db.ref(DB_REF).set(projectData).catch(err => console.error('Firebase save error:', err));
 }
+
 
 // Global Activity Logger
 function logActivity(action, details = '') {
@@ -333,9 +237,6 @@ window.onload = function () {
             currentState.currentUser = JSON.parse(savedUser);
             document.getElementById('login-overlay').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
-
-            // Note: Firebase on('value') might have already fired or will fire soon.
-            // initApp() will safely render the current state.
             initApp();
             return; // Skip Google Identity Services prompt
         } catch (e) {
@@ -372,12 +273,114 @@ const DOM = {
 };
 
 // Initialize App (Now called AFTER accurate Login)
+// Loads data from Firebase, sets up real-time listener, then boots UI
 function initApp() {
-    renderSidebar();
-    renderDashboard();
-    updateOverallProgress();
-    setupEventListeners();
-    loadGoogleCalendarAPI(); // Load calendar gapi after app boots natively
+    const dataRef = db.ref(DB_REF);
+
+    // Show a loading indicator while we fetch from Firebase
+    DOM.contentBody.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:60vh;">
+            <div style="text-align:center;">
+                <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem;color:var(--text-muted);"></i>
+                <p style="margin-top:16px;color:var(--text-muted);">Connecting to cloud database…</p>
+            </div>
+        </div>
+    `;
+
+    // .once reads data once; we then set up an onValue listener for real-time updates
+    dataRef.once('value', (snapshot) => {
+        let loadedData = snapshot.val();
+
+        if (loadedData) {
+            // Merge loaded cloud data, then apply migrations
+            projectData = loadedData;
+        } else {
+            // First time ever — push the default template to Firebase
+            projectData = JSON.parse(JSON.stringify(emptyProjectData));
+            dataRef.set(projectData);
+        }
+
+        // Run migrations on whatever we loaded
+        runMigrations();
+
+        // Boot the UI
+        renderSidebar();
+        renderDashboard();
+        updateOverallProgress();
+        setupEventListeners();
+        loadGoogleCalendarAPI();
+
+        // Now listen for real-time changes from OTHER devices
+        // We use 'value' but skip the very first call (already handled above)
+        let isFirstCall = true;
+        dataRef.on('value', (snap) => {
+            if (isFirstCall) { isFirstCall = false; return; }
+            const remoteData = snap.val();
+            if (!remoteData) return;
+            projectData = remoteData;
+            // Refresh whatever page is currently visible
+            if (currentState.activePhaseId === null) {
+                renderDashboard();
+            } else if (currentState.activePhaseId === 'videos') {
+                renderVideosView();
+            } else if (currentState.activePhaseId === 'video-dashboard') {
+                renderVideoDashboard();
+            } else if (currentState.activePhaseId === 'activity-log') {
+                renderActivityLog();
+            } else {
+                renderPhase(currentState.activePhaseId);
+            }
+            updateOverallProgress();
+        });
+    }).catch(err => {
+        console.error('Firebase load error:', err);
+        DOM.contentBody.innerHTML = `<p style="color:var(--status-pending);text-align:center;margin-top:60px;">⚠ Could not connect to the database. Please check your internet connection and refresh.</p>`;
+    });
+}
+
+// Apply forwards-compatibility migration scripts to loaded data
+function runMigrations() {
+    if (!projectData.activityLog) projectData.activityLog = [];
+    if (!projectData.videos) projectData.videos = [];
+
+    // Ensure phase title renames
+    if (projectData.phases && (projectData.phases[0].title === 'Pre-production' || projectData.phases[0].title === 'Pre Production')) {
+        projectData.phases[0].title = 'Planning';
+        projectData.phases[1].title = 'Execution';
+        projectData.phases[2].title = 'Review';
+    }
+
+    // Merge in default sub-phase text (preserving statuses/notes)
+    if (projectData.phases) {
+        [0, 1, 2].forEach(phaseIndex => {
+            const defaultList = defaultProjectData.phases[phaseIndex].subPhases;
+            let activeList = projectData.phases[phaseIndex].subPhases;
+            defaultList.forEach(defCard => {
+                const existing = activeList.find(sp => sp.id === defCard.id);
+                if (existing) {
+                    existing.title = defCard.title;
+                    existing.timeline = defCard.timeline;
+                    existing.keyResponsibility = defCard.keyResponsibility;
+                    existing.participants = defCard.participants;
+                    existing.agenda = defCard.agenda;
+                } else {
+                    activeList.push(JSON.parse(JSON.stringify(defCard)));
+                }
+            });
+            activeList.sort((a, b) => a.id.localeCompare(b.id));
+        });
+    }
+
+    // Strip old fields from videos
+    projectData.videos.forEach(vid => {
+        if (vid.scriptSheetUrl !== undefined) delete vid.scriptSheetUrl;
+        if (vid.editSheetUrl !== undefined) delete vid.editSheetUrl;
+        if (vid.scriptLogs !== undefined) delete vid.scriptLogs;
+        if (vid.editLogs !== undefined) delete vid.editLogs;
+        if (vid.notes === undefined) vid.notes = '';
+    });
+    if (projectData.globalScriptSheetUrl !== undefined) delete projectData.globalScriptSheetUrl;
+    if (projectData.globalEditSheetUrl !== undefined) delete projectData.globalEditSheetUrl;
 }
 
 // Render Sidebar Navigation
@@ -418,10 +421,9 @@ function renderSidebar() {
     videosHeader.textContent = 'VIDEOS';
     DOM.navLinks.appendChild(videosHeader);
 
-    // The Videos section has only one view, the Video Tracker, so we point Dashboard to it as well.
     const videoDashLi = document.createElement('li');
     videoDashLi.innerHTML = `
-        <a href="#" class="nav-item ${currentState.activePhaseId === 'video-dashboard' ? 'active' : ''}" data-target="videos">
+        <a href="#" class="nav-item ${currentState.activePhaseId === 'video-dashboard' ? 'active' : ''}" data-target="video-dashboard">
             <i class="fa-solid fa-chart-line"></i>
             <span>Dashboard</span>
         </a>
@@ -1279,6 +1281,14 @@ function setupVideoDragAndDrop() {
 
 // Navigation Logic
 function navigateToPhase(phaseId) {
+    currentState.activePhaseId = phaseId;
+    renderSidebar();
+
+    // Trigger animation
+    DOM.contentBody.style.animation = 'none';
+    DOM.contentBody.offsetHeight; // trigger reflow
+    DOM.contentBody.style.animation = 'fadeIn var(--transition-normal)';
+
     // Theme injection specifically for Video Tracker tab
     if (phaseId === 'videos' || phaseId === 'video-dashboard') {
         document.body.classList.add('theme-videos');
@@ -1288,19 +1298,14 @@ function navigateToPhase(phaseId) {
 
     if (phaseId === null || phaseId === 'dashboard') {
         currentState.activePhaseId = null;
-        renderSidebar();
         renderDashboard();
-    } else if (phaseId === 'video-dashboard' || phaseId === 'videos') {
-        currentState.activePhaseId = 'videos';
-        renderSidebar();
+    } else if (phaseId === 'video-dashboard') {
+        renderVideoDashboard();
+    } else if (phaseId === 'videos') {
         renderVideosView();
     } else if (phaseId === 'activity-log') {
-        currentState.activePhaseId = 'activity-log';
-        renderSidebar();
         renderActivityLog();
     } else {
-        currentState.activePhaseId = phaseId;
-        renderSidebar();
         renderPhase(phaseId);
     }
 }
