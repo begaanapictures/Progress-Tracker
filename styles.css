@@ -1009,6 +1009,14 @@ body.theme-videos {
 /* ---------------------------------
    VIDEO LOGS / SHEETS
 --------------------------------- */
+.video-dashboard-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 30px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .video-logs-header {
   display: flex;
   justify-content: space-between;
@@ -1545,10 +1553,16 @@ body.theme-videos {
   }
 
   .kanban-column {
-    min-width: 85vw;
-    /* Allow horizontal swiping */
+    min-width: 65vw;
+    /* Slightly thinner to allow easier swiping and drag/drop */
     flex-shrink: 0;
     scroll-snap-align: center;
+  }
+
+  /* Video Dashboard overrides */
+  .video-dashboard-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   /* Modals */
