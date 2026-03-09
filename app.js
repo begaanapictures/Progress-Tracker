@@ -493,37 +493,37 @@ function renderDashboard() {
 
     // Group them into one elegant visual unit
     html += `
-        <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 30px;">
+        <div class="dashboard-pipeline-container">
             
-            <div style="padding: 24px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-elevated);">
-                <h3 style="margin-bottom: 6px; font-size: 1.25rem; color: var(--text-primary); font-weight: 600;">Full Pipeline Breakdown</h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">A consolidated view of all required phases to complete production.</p>
+            <div class="pipeline-header">
+                <h3 class="pipeline-title">Full Pipeline Breakdown</h3>
+                <p class="pipeline-subtitle">A consolidated view of all required phases to complete production.</p>
             </div>
 
-            <div style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+            <div class="pipeline-body">
                 
                 <!-- Phase 1: Pre-production -->
-                <div class="phase-card box-glow" data-phase="${p1.id}" style="border-left: 4px solid #f59e0b; border-top: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); cursor: pointer; margin: 0; background: var(--bg-primary);">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                        <div>
-                            <span class="phase-badge" style="color: #f59e0b; background: #f59e0b22; display: inline-flex; margin-bottom: 10px;"><i class="fa-solid ${p1.icon}"></i> Phase 1</span>
+                <div class="phase-card box-glow phase-interactive" data-phase="${p1.id}">
+                    <div class="phase-card-top">
+                        <div class="phase-card-info">
+                            <span class="phase-badge phase1-badge"><i class="fa-solid ${p1.icon}"></i> Phase 1</span>
                             <h2 class="phase-title" style="margin-bottom: 4px;">${p1.title}</h2>
-                            <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px; margin: 0;">Initial conceptualization, scripting, and pre-shoot logistics. Fully interactive manual tracking board.</p>
+                            <p class="phase-description">Initial conceptualization, scripting, and pre-shoot logistics. Fully interactive manual tracking board.</p>
                         </div>
                         <span class="status-badge ${p1Total > 0 && p1Completed === p1Total ? 'completed' : 'pending'}">${p1Total === 0 ? 'No sub-phases' : Math.round((p1Completed / p1Total) * 100) + '% Done'}</span>
                     </div>
                     
-                    <div style="margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary); font-weight: 500;">
+                    <div class="phase-progress-container">
+                        <div class="phase-progress-header">
                             <span>Progress</span>
                             <span>${p1Total === 0 ? '0' : Math.round((p1Completed / p1Total) * 100)}%</span>
                         </div>
-                        <div style="width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
-                            <div style="width: ${p1Total === 0 ? 0 : (p1Completed / p1Total) * 100}%; height: 100%; background: #f59e0b; border-radius: 4px; transition: width 0.3s ease;"></div>
+                        <div class="phase-progress-bar">
+                            <div class="phase-progress-fill phase1-fill" style="width: ${p1Total === 0 ? 0 : (p1Completed / p1Total) * 100}%;"></div>
                         </div>
                         <div class="phase-stats">
                             <div class="stat-item">
-                                <span class="stat-value" style="color: #f59e0b;">${p1Total}</span>
+                                <span class="stat-value phase1-text">${p1Total}</span>
                                 <span class="stat-label">Tasks</span>
                             </div>
                             <div class="stat-item">
@@ -532,43 +532,43 @@ function renderDashboard() {
                             </div>
                         </div>
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; font-weight: 500;"><i class="fa-solid fa-arrow-right" style="margin-right: 4px;"></i> Click to manage board</div>
+                    <div class="phase-card-footer"><i class="fa-solid fa-arrow-right"></i> Click to manage board</div>
                 </div>
 
                 <!-- Phase 2: Production -->
-                <div style="background: var(--bg-primary); border-left: 4px solid #3b82f6; border-radius: var(--radius-md); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-right: 1px solid var(--border-subtle); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
-                    <div style="display: flex; align-items: center; gap: 18px;">
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #3b82f615; display: flex; align-items: center; justify-content: center; color: #3b82f6;">
-                            <i class="fa-solid ${p2.icon}" style="font-size: 1.25rem;"></i>
+                <div class="phase-stage-card phase2-border">
+                    <div class="stage-info">
+                        <div class="stage-icon phase2-icon">
+                            <i class="fa-solid ${p2.icon}"></i>
                         </div>
-                        <div>
-                            <div style="font-size: 0.75rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin-bottom: 3px;">Phase 2</div>
-                            <div style="font-size: 1.3rem; color: var(--text-primary); font-weight: 500; font-family: Outfit, sans-serif; margin-bottom: 2px;">${p2.title}</div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px; margin: 0;">Live shooting and material gathering on set.</div>
+                        <div class="stage-text">
+                            <div class="stage-number phase2-text">Phase 2</div>
+                            <div class="stage-title">${p2.title}</div>
+                            <div class="stage-desc">Live shooting and material gathering on set.</div>
                         </div>
                     </div>
-                    <div style="text-align: right;">
+                    <div class="stage-status">
                         <span class="status-badge" style="background: transparent; color: ${p2Done ? '#10b981' : 'var(--text-muted)'}; border: 1px solid ${p2Done ? '#10b98144' : 'var(--border-subtle)'};">
-                            ${p2Done ? '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Active / Ready' : '<i class="fa-solid fa-hourglass-start" style="margin-right:6px;"></i> Awaiting completion of Phase 1'}
+                            ${p2Done ? '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Active / Ready' : '<i class="fa-solid fa-hourglass-start" style="margin-right:6px;"></i> Awaiting Phase 1'}
                         </span>
                     </div>
                 </div>
                 
                 <!-- Phase 3: Post -->
-                <div style="background: var(--bg-primary); border-left: 4px solid #10b981; border-radius: var(--radius-md); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-right: 1px solid var(--border-subtle); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
-                    <div style="display: flex; align-items: center; gap: 18px;">
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #10b98115; display: flex; align-items: center; justify-content: center; color: #10b981;">
-                            <i class="fa-solid ${p3.icon}" style="font-size: 1.25rem;"></i>
+                <div class="phase-stage-card phase3-border">
+                    <div class="stage-info">
+                        <div class="stage-icon phase3-icon">
+                            <i class="fa-solid ${p3.icon}"></i>
                         </div>
-                        <div>
-                            <div style="font-size: 0.75rem; color: #10b981; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin-bottom: 3px;">Phase 3</div>
-                            <div style="font-size: 1.3rem; color: var(--text-primary); font-weight: 500; font-family: Outfit, sans-serif; margin-bottom: 2px;">${p3.title}</div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px; margin: 0;">Editing, revisions, and final delivery sign-offs.</div>
+                        <div class="stage-text">
+                            <div class="stage-number phase3-text">Phase 3</div>
+                            <div class="stage-title">${p3.title}</div>
+                            <div class="stage-desc">Editing, revisions, and final delivery sign-offs.</div>
                         </div>
                     </div>
-                    <div style="text-align: right;">
+                    <div class="stage-status">
                         <span class="status-badge" style="background: transparent; color: ${p3Started ? '#10b981' : 'var(--text-muted)'}; border: 1px solid ${p3Started ? '#10b98144' : 'var(--border-subtle)'};">
-                            ${p3Started ? '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Active tracking in Video Dashboard' : '<i class="fa-solid fa-hourglass-start" style="margin-right:6px;"></i> Log videos to activate'}
+                            ${p3Started ? '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Active Tracking' : '<i class="fa-solid fa-hourglass-start" style="margin-right:6px;"></i> Awaiting Videos'}
                         </span>
                     </div>
                 </div>
