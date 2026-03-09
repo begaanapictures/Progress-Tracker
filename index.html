@@ -28,6 +28,11 @@
             <h2>Welcome to ProTrack</h2>
             <p>Please sign in with an authorized Google account to access this workspace.</p>
             <div id="google-login-button-container"></div>
+            <div class="form-group"
+                style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 15px; margin-bottom: 0;">
+                <input type="checkbox" id="remember-me" checked>
+                <label for="remember-me" style="margin: 0; cursor: pointer; color: var(--text-secondary);">Remember me</label>
+            </div>
             <div id="login-error" class="login-error-msg hidden">Account not authorized.</div>
         </div>
     </div>
@@ -67,7 +72,8 @@
                     <div>
                         <h1 id="page-title">Dashboard</h1>
                         <div style="display: flex; align-items: center; gap: 16px;">
-                            <p id="page-subtitle" class="text-muted" style="margin: 0; margin-top: 2px;">Overview of your
+                            <p id="page-subtitle" class="text-muted" style="margin: 0; margin-top: 2px;">Overview of
+                                your
                                 production pipeline</p>
                         </div>
                     </div>
@@ -89,6 +95,9 @@
                     </button>
                     <button class="btn btn-outline" id="connect-calendar" title="Connect Google Calendar">
                         <i class="fa-brands fa-google"></i>
+                    </button>
+                    <button class="btn btn-outline" id="logout-btn" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
                     </button>
                     <div class="user-profile">
                         <img src="https://ui-avatars.com/api/?name=User&background=333&color=fff" alt="User Avatar">
