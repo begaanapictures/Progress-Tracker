@@ -9,7 +9,7 @@ const defaultProjectData = {
             subPhases: [
                 {
                     id: '1A',
-                    title: 'Monday Strategy Call',
+                    title: 'Strategy Call',
                     timeline: 'Monday',
                     keyResponsibility: 'Project Manager',
                     participants: 'All',
@@ -27,15 +27,6 @@ const defaultProjectData = {
                 },
                 {
                     id: '1C',
-                    title: 'Logistics & Prep',
-                    timeline: 'Tuesday - Wednesday',
-                    keyResponsibility: 'Project Manager and Stylist',
-                    participants: 'Project Manager, Stylist, Script writer, Videographer and Director.',
-                    agenda: 'Project manager is to start the process of finalizing actors, locations, equipment and any other requirement for the shoot according to the approved scripts. Stylist is to procure all props (based on the scripts\' requirement) and organize the 7ate9 apparel lineup (steaming, sizing, pairing). The Videographer and Director are to communicate any specific requirements to one of the two Key Responsibility individuals. Any cost associated with the same is to be approved and cleared beforehand.',
-                    status: 'pending'
-                },
-                {
-                    id: '1D',
                     title: 'Final Call',
                     timeline: 'Wednesday',
                     keyResponsibility: 'Project Manager',
@@ -50,74 +41,19 @@ const defaultProjectData = {
             title: 'Execution',
             description: 'Shooting and field execution',
             icon: 'fa-video',
-            subPhases: [
-                {
-                    id: '2A',
-                    title: 'Production Pre Shoot',
-                    timeline: 'Thursday - Friday - Saturday',
-                    keyResponsibility: 'Project Manager',
-                    participants: 'Project Manager and Stylist',
-                    agenda: 'The project manager and stylist make sure that the specific locations/permissions, props, equipment and everything else required to shoot is readily available on shoot day. The project manager assures that timing that was communicated is followed and emphasized on.',
-                    status: 'pending'
-                },
-                {
-                    id: '2B',
-                    title: 'Production',
-                    timeline: 'Thursday - Friday - Saturday',
-                    keyResponsibility: 'Director and Videographer',
-                    participants: 'Director, Videographer, Project Manager and Stylist',
-                    agenda: 'The videographer and the director pair up to shoot these videos according to the designed vision. The Project manager and the stylist provide necessary support as per their role and ensure a smooth, hassle free shoot and make sure that the Director and Videographer have everything they need to fulfill their creative vision. The director and videographer are to make sure each frame is as per expectations and checks all boxes mentioned in previous discussions.',
-                    status: 'pending'
-                },
-                {
-                    id: '2C',
-                    title: 'Production Post Shoot',
-                    timeline: 'Thursday - Friday - Saturday',
-                    keyResponsibility: 'Project Manager and Videographer',
-                    participants: 'Videographer, Project Manager and Stylist',
-                    agenda: 'The Project manager ensures that all videos to be shot have been shot and any equipment that needs to be delivered at a specific location is taken care of. The stylist makes sure that all props and apparel used are tracked and reach the Fractal office post shoot. Not one prop, apparel or equipment should be unaccounted for or go missing.\nThe videographer makes sure to upload the footage of each shoot day on the provided drive. Footage from each day must be uploaded on the drive before the day can be considered as concluded.',
-                    status: 'pending'
-                }
-            ]
+            subPhases: []
         },
         {
             id: 'phase3',
             title: 'Review',
             description: 'Editing, upload, and final review',
             icon: 'fa-photo-film',
-            subPhases: [
-                {
-                    id: '3A',
-                    title: 'Post Production',
-                    timeline: 'Friday - Saturday - Sunday',
-                    keyResponsibility: 'Editors',
-                    participants: 'Editors and Project Manager',
-                    agenda: 'Editors begin on Friday morning using Thursday\'s footage. A minimum of 8 edited videos per day. Videos are posted to the internal group as they are finished and feedback is provided immediately. All feedback is consolidated and kept track of in individual data sheets. Editors must implement and re-upload changes within the same work shift to maintain the 30-video-per-week quota. Project Manager is to take follow ups and make sure the editors stay on track and complete the given task within the assigned timeline.',
-                    status: 'pending'
-                },
-                {
-                    id: '3B',
-                    title: 'Final Upload',
-                    timeline: 'Friday - Saturday - Sunday',
-                    keyResponsibility: 'Editors',
-                    participants: 'Editors and Project Manager',
-                    agenda: 'All edits are made as per expectation and uploaded on the drive, in the final folder. All final versions are also stored on a back up drive.',
-                    status: 'pending'
-                },
-                {
-                    id: '3C',
-                    title: 'Feedback',
-                    timeline: 'End of cycle',
-                    keyResponsibility: 'Project Manager',
-                    participants: 'All',
-                    agenda: 'Clear, concise and constructive feedback for the functioning of the week is shared by all on the group in polite and encoraging words. Individual calls are set up to iron out any specific shortcomings that need special attention. Make sure no mistake is repeated twice.',
-                    status: 'pending'
-                }
-            ]
+            subPhases: []
         }
     ],
     videos: []
 };
+
 
 // Start Fresh System
 const emptyProjectData = {
@@ -264,8 +200,6 @@ const DOM = {
     contentBody: document.getElementById('content-body'),
     pageTitle: document.getElementById('page-title'),
     pageSubtitle: document.getElementById('page-subtitle'),
-    overallProgressBar: document.getElementById('overall-progress-bar'),
-    overallProgressText: document.getElementById('overall-progress-text'),
     modalContainer: document.getElementById('modal-container'),
     modalContent: document.getElementById('modal-content'),
     modalClose: document.getElementById('modal-close'),
@@ -350,11 +284,15 @@ function runMigrations() {
         projectData.phases[2].title = 'Review';
     }
 
-    // Merge in default sub-phase text (preserving statuses/notes)
+    // Merge in default sub-phase text (preserving statuses/notes), and actively clear deleted ones
     if (projectData.phases) {
         [0, 1, 2].forEach(phaseIndex => {
             const defaultList = defaultProjectData.phases[phaseIndex].subPhases;
             let activeList = projectData.phases[phaseIndex].subPhases;
+
+            // Rebuild the activeList by ONLY keeping sub-phases that exist in defaultList
+            const newActiveList = [];
+
             defaultList.forEach(defCard => {
                 const existing = activeList.find(sp => sp.id === defCard.id);
                 if (existing) {
@@ -363,11 +301,13 @@ function runMigrations() {
                     existing.keyResponsibility = defCard.keyResponsibility;
                     existing.participants = defCard.participants;
                     existing.agenda = defCard.agenda;
+                    newActiveList.push(existing);
                 } else {
-                    activeList.push(JSON.parse(JSON.stringify(defCard)));
+                    newActiveList.push(JSON.parse(JSON.stringify(defCard)));
                 }
             });
-            activeList.sort((a, b) => a.id.localeCompare(b.id));
+
+            projectData.phases[phaseIndex].subPhases = newActiveList.sort((a, b) => a.id.localeCompare(b.id));
         });
     }
 
@@ -403,17 +343,8 @@ function renderSidebar() {
     `;
     DOM.navLinks.appendChild(dashboardLi);
 
-    // Phase Links
-    projectData.phases.forEach(phase => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <a href="#" class="nav-item ${currentState.activePhaseId === phase.id ? 'active' : ''}" data-target="${phase.id}">
-                <i class="fa-solid ${phase.icon}"></i>
-                <span>${phase.title}</span>
-            </a>
-        `;
-        DOM.navLinks.appendChild(li);
-    });
+    // Phase links removed as requested.
+
 
     // -- VIDEOS SECTION --
     const videosHeader = document.createElement('li');
@@ -505,37 +436,146 @@ function renderDashboard() {
     DOM.pageTitle.textContent = 'Dashboard';
     DOM.pageSubtitle.textContent = 'Overview of your production pipeline';
 
-    let html = renderTimeline();
-    html += '<div class="dashboard-grid">';
+    // 1. Calculate the active stage across the board
+    const phases = projectData.phases;
 
-    projectData.phases.forEach(phase => {
-        const relevantSubPhases = phase.subPhases;
-        const total = relevantSubPhases.length;
-        const completed = relevantSubPhases.filter(sp => sp.status === 'completed').length;
-        const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+    // Planning (amber)
+    const p1Total = phases[0].subPhases.length;
+    const p1Completed = phases[0].subPhases.filter(sp => sp.status === 'completed').length;
+    const p1Done = p1Total > 0 && p1Completed === p1Total;
 
-        html += `
-            <div class="phase-card" data-phase="${phase.id}">
-                <div class="phase-header">
-                    <span class="phase-badge"><i class="fa-solid ${phase.icon}"></i> Phase ${phase.id.replace('phase', '')}</span>
-                    <span class="status-badge ${percentage === 100 ? 'completed' : (percentage > 0 ? 'progress' : 'pending')}">
-                        ${percentage}% Done
-                    </span>
-                </div>
-                <h2 class="phase-title">${phase.title}</h2>
-                <div class="phase-stats">
-                    <div class="stat-item">
-                        <span class="stat-value">${total}</span>
-                        <span class="stat-label">Sub-phases</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">${completed}</span>
-                        <span class="stat-label">Completed</span>
-                    </div>
+    // Execution (blue) - automatically considered 'done' if review is started/done, otherwise check if started
+    const p3Started = phases[2].subPhases.some(sp => sp.status !== 'pending') || (phases[2].subPhases.length > 0 && phases[2].subPhases.filter(sp => sp.status === 'completed').length === phases[2].subSubPhases?.length);
+    const p2Done = p3Started; // For simplicity in visuals without sub-phases
+
+    let activeStageName = 'Pre-production (Planning)';
+    let activeColor = '#f59e0b';
+    let p1Width = 33, p2Width = 33, p3Width = 34; // visual bar splits
+    let p1Op = 1, p2Op = 0.3, p3Op = 0.3;
+
+    if (p1Done && !p2Done) {
+        activeStageName = 'Production (Shooting)';
+        activeColor = '#3b82f6';
+        p1Op = 0.3; p2Op = 1; p3Op = 0.3;
+    } else if (p1Done && p2Done) {
+        activeStageName = 'Post-production (Review)';
+        activeColor = '#10b981';
+        p1Op = 0.3; p2Op = 0.3; p3Op = 1;
+    }
+
+    let html = `
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h2 style="font-size: 1.5rem; color: var(--text-primary); margin-bottom: 4px;">Active: ${activeStageName}</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Sub-phases are tracked in Pre-production.</p>
                 </div>
             </div>
-        `;
-    });
+
+            <!-- Unified 3-Stage Progress Bar -->
+            <div style="display: flex; width: 100%; height: 16px; border-radius: 8px; overflow: hidden; gap: 4px;">
+                <div style="width: ${p1Width}%; background-color: #f59e0b; opacity: ${p1Op}; transition: opacity 0.3s;"></div>
+                <div style="width: ${p2Width}%; background-color: #3b82f6; opacity: ${p2Op}; transition: opacity 0.3s;"></div>
+                <div style="width: ${p3Width}%; background-color: #10b981; opacity: ${p3Op}; transition: opacity 0.3s;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.8rem; font-weight: 500;">
+                <span style="width: ${p1Width}%; color: ${p1Op === 1 ? '#f59e0b' : 'var(--text-muted)'}; text-align: left;">Pre-production</span>
+                <span style="width: ${p2Width}%; color: ${p2Op === 1 ? '#3b82f6' : 'var(--text-muted)'}; text-align: center;">Production</span>
+                <span style="width: ${p3Width}%; color: ${p3Op === 1 ? '#10b981' : 'var(--text-muted)'}; text-align: right;">Post-production</span>
+            </div>
+        </div>
+    `;
+
+    // Phase 1 Card (Clickable)
+    const p1 = projectData.phases[0];
+    const p2 = projectData.phases[1];
+    const p3 = projectData.phases[2];
+
+    // Group them into one elegant visual unit
+    html += `
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 30px;">
+            
+            <div style="padding: 24px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-elevated);">
+                <h3 style="margin-bottom: 6px; font-size: 1.25rem; color: var(--text-primary); font-weight: 600;">Full Pipeline Breakdown</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">A consolidated view of all required phases to complete production.</p>
+            </div>
+
+            <div style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                
+                <!-- Phase 1: Pre-production -->
+                <div class="phase-card box-glow" data-phase="${p1.id}" style="border-left: 4px solid #f59e0b; border-top: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); cursor: pointer; margin: 0; background: var(--bg-primary);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div>
+                            <span class="phase-badge" style="color: #f59e0b; background: #f59e0b22; display: inline-flex; margin-bottom: 10px;"><i class="fa-solid ${p1.icon}"></i> Phase 1</span>
+                            <h2 class="phase-title" style="margin-bottom: 4px;">${p1.title}</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px; margin: 0;">Initial conceptualization, scripting, and pre-shoot logistics. Fully interactive manual tracking board.</p>
+                        </div>
+                        <span class="status-badge ${p1Total > 0 && p1Completed === p1Total ? 'completed' : 'pending'}">${p1Total === 0 ? 'No sub-phases' : Math.round((p1Completed / p1Total) * 100) + '% Done'}</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary); font-weight: 500;">
+                            <span>Progress</span>
+                            <span>${p1Total === 0 ? '0' : Math.round((p1Completed / p1Total) * 100)}%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                            <div style="width: ${p1Total === 0 ? 0 : (p1Completed / p1Total) * 100}%; height: 100%; background: #f59e0b; border-radius: 4px; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div class="phase-stats">
+                            <div class="stat-item">
+                                <span class="stat-value" style="color: #f59e0b;">${p1Total}</span>
+                                <span class="stat-label">Tasks</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" style="color: ${p1Completed === p1Total && p1Total > 0 ? 'var(--status-completed)' : 'var(--text-primary)'};">${p1Completed}</span>
+                                <span class="stat-label">Done</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; font-weight: 500;"><i class="fa-solid fa-arrow-right" style="margin-right: 4px;"></i> Click to manage board</div>
+                </div>
+
+                <!-- Phase 2: Production -->
+                <div style="background: var(--bg-primary); border-left: 4px solid #3b82f6; border-radius: var(--radius-md); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-right: 1px solid var(--border-subtle); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+                    <div style="display: flex; align-items: center; gap: 18px;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #3b82f615; display: flex; align-items: center; justify-content: center; color: #3b82f6;">
+                            <i class="fa-solid ${p2.icon}" style="font-size: 1.25rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin-bottom: 3px;">Phase 2</div>
+                            <div style="font-size: 1.3rem; color: var(--text-primary); font-weight: 500; font-family: Outfit, sans-serif; margin-bottom: 2px;">${p2.title}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px; margin: 0;">Live shooting and material gathering on set.</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status-badge" style="background: transparent; color: ${p2Done ? '#10b981' : 'var(--text-muted)'}; border: 1px solid ${p2Done ? '#10b98144' : 'var(--border-subtle)'};">
+                            ${p2Done ? '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Active / Ready' : '<i class="fa-solid fa-hourglass-start" style="margin-right:6px;"></i> Awaiting completion of Phase 1'}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Phase 3: Post -->
+                <div style="background: var(--bg-primary); border-left: 4px solid #10b981; border-radius: var(--radius-md); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-right: 1px solid var(--border-subtle); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+                    <div style="display: flex; align-items: center; gap: 18px;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #10b98115; display: flex; align-items: center; justify-content: center; color: #10b981;">
+                            <i class="fa-solid ${p3.icon}" style="font-size: 1.25rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: #10b981; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin-bottom: 3px;">Phase 3</div>
+                            <div style="font-size: 1.3rem; color: var(--text-primary); font-weight: 500; font-family: Outfit, sans-serif; margin-bottom: 2px;">${p3.title}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px; margin: 0;">Editing, revisions, and final delivery sign-offs.</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status-badge" style="background: transparent; color: ${p3Started ? '#10b981' : 'var(--text-muted)'}; border: 1px solid ${p3Started ? '#10b98144' : 'var(--border-subtle)'};">
+                            ${p3Started ? '<i class="fa-solid fa-check" style="margin-right:6px;"></i> Active tracking in Video Dashboard' : '<i class="fa-solid fa-hourglass-start" style="margin-right:6px;"></i> Log videos to activate'}
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    `;
 
     html += '</div>';
     DOM.contentBody.innerHTML = html;
@@ -555,80 +595,79 @@ function renderVideoDashboard() {
     DOM.pageSubtitle.textContent = 'Metrics and pipeline progress for video production';
 
     const totalVideos = projectData.videos.length;
-    const completedVideos = projectData.videos.filter(v => v.status === 'completed').length;
-    const preProdVideos = projectData.videos.filter(v => v.status === 'pre-production').length;
-    const prodVideos = projectData.videos.filter(v => v.status === 'production').length;
+    const approvedVideos = projectData.videos.filter(v => v.status === 'approved').length;
     const postProdVideos = projectData.videos.filter(v => v.status === 'post-production').length;
+    const underChangeVideos = projectData.videos.filter(v => v.status === 'under-change').length;
 
-    const percentage = totalVideos === 0 ? 0 : Math.round((completedVideos / totalVideos) * 100);
+    const percentage = totalVideos === 0 ? 0 : Math.round((approvedVideos / totalVideos) * 100);
+
+    // SVG donut chart
+    const radius = 70;
+    const circumference = 2 * Math.PI * radius;
+    const dashOffset = circumference - (percentage / 100) * circumference;
+
+    const statCards = [
+        { label: 'Post-production', count: postProdVideos, icon: 'fa-photo-film', color: '#3b82f6', status: 'progress' },
+        { label: 'Under Change', count: underChangeVideos, icon: 'fa-rotate', color: '#f59e0b', status: 'pending' },
+        { label: 'Approved', count: approvedVideos, icon: 'fa-circle-check', color: '#10b981', status: 'completed' },
+    ];
 
     let html = `
-        <div class="timeline-container" style="margin-bottom: 30px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="font-size: 1.2rem; font-weight: 500;">Overall Batch Progress</h2>
-                <span class="status-badge ${percentage === 100 ? 'completed' : (percentage > 0 ? 'progress' : 'pending')}">${percentage}% Completed</span>
-            </div>
-            <div class="progress-bar-container" style="height: 12px; border-radius: 6px;">
-                <div class="progress-bar-fill" style="width: ${percentage}%; background-color: var(--status-completed);"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 8px; color: var(--text-muted); font-size: 0.85rem;">
-                <span>0</span>
-                <span>${completedVideos} / ${totalVideos} Videos</span>
-            </div>
-        </div>
-
-        <div class="dashboard-grid">
-            <div class="phase-card box-glow" data-phase="videos">
-                <div class="phase-header">
-                    <span class="phase-badge"><i class="fa-solid fa-hourglass-start"></i> Pre-production</span>
-                    <span class="status-badge pending">${preProdVideos} Videos</span>
-                </div>
-                <h2 class="phase-title">Scripting & Logistics</h2>
-                <div class="phase-stats">
-                    <div class="stat-item">
-                        <span class="stat-value" style="color: var(--status-pending);">${preProdVideos}</span>
-                        <span class="stat-label">Pending Action</span>
+        <!-- Circular Dashboard -->
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 32px; margin-bottom: 28px; flex-wrap: wrap;">
+                <!-- SVG Donut -->
+                <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+                    <svg width="180" height="180" viewBox="0 0 180 180">
+                        <!-- Track -->
+                        <circle cx="90" cy="90" r="${radius}" fill="none" stroke="var(--bg-elevated)" stroke-width="16" />
+                        <!-- Progress arc -->
+                        <circle cx="90" cy="90" r="${radius}" fill="none"
+                            stroke="#10b981"
+                            stroke-width="16"
+                            stroke-linecap="round"
+                            stroke-dasharray="${circumference.toFixed(2)}"
+                            stroke-dashoffset="${dashOffset.toFixed(2)}"
+                            transform="rotate(-90 90 90)"
+                            style="transition: stroke-dashoffset 1s ease;" />
+                        <!-- Centre text -->
+                        <text x="90" y="84" text-anchor="middle" font-size="28" font-weight="700" fill="white" font-family="Outfit, sans-serif">${percentage}%</text>
+                        <text x="90" y="106" text-anchor="middle" font-size="12" fill="#737373" font-family="Inter, sans-serif">Approved</text>
+                    </svg>
+                    <div style="text-align:center;">
+                        <div style="font-size:0.8rem; color:var(--text-muted);">${approvedVideos} of ${totalVideos} videos approved</div>
                     </div>
                 </div>
-            </div>
+                <!-- Stat Cards -->
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    `;
 
-            <div class="phase-card box-glow" data-phase="videos">
-                <div class="phase-header">
-                    <span class="phase-badge"><i class="fa-solid fa-video"></i> Production</span>
-                    <span class="status-badge progress">${prodVideos} Videos</span>
-                </div>
-                <h2 class="phase-title">Active Shooting</h2>
-                <div class="phase-stats">
-                    <div class="stat-item">
-                        <span class="stat-value" style="color: var(--status-progress);">${prodVideos}</span>
-                        <span class="stat-label">In Progress</span>
+    statCards.forEach(s => {
+        html += `
+                <div class="phase-card" data-phase="videos"
+                     style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-left:4px solid ${s.color};">
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <div style="width:40px;height:40px;border-radius:50%;background:${s.color}22;display:flex;align-items:center;justify-content:center;">
+                            <i class="fa-solid ${s.icon}" style="color:${s.color}; font-size:1rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">${s.label}</div>
+                            <div style="font-size:1.5rem;font-weight:700;color:${s.color};font-family:Outfit,sans-serif;">${s.count}</div>
+                        </div>
                     </div>
+                    <span class="status-badge ${s.status}">${s.count} Video${s.count !== 1 ? 's' : ''}</span>
                 </div>
-            </div>
+        `;
+    });
 
-            <div class="phase-card box-glow" data-phase="videos">
-                <div class="phase-header">
-                    <span class="phase-badge"><i class="fa-solid fa-photo-film"></i> Post-production</span>
-                    <span class="status-badge progress">${postProdVideos} Videos</span>
-                </div>
-                <h2 class="phase-title">Editing & Review</h2>
-                <div class="phase-stats">
-                    <div class="stat-item">
-                        <span class="stat-value" style="color: var(--status-progress);">${postProdVideos}</span>
-                        <span class="stat-label">In Alignment</span>
-                    </div>
+    html += `
                 </div>
             </div>
-        </div>
     `;
 
     DOM.contentBody.innerHTML = html;
 
-    // Attach listeners to cards to route directly to the video kanban board
     document.querySelectorAll('.phase-card').forEach(card => {
-        card.addEventListener('click', () => {
-            navigateToPhase('videos');
-        });
+        card.addEventListener('click', () => navigateToPhase('videos'));
     });
 }
 
@@ -638,7 +677,7 @@ function renderActivityLog() {
     DOM.pageSubtitle.textContent = 'Master record of all system activity';
 
     let html = `
-        <div style="background-color: var(--bg-primary); border-radius: var(--radius-md); padding: 20px; border: 1px solid var(--border-subtle); max-width: 800px; margin: 0 auto;">
+        < div style = "background-color: var(--bg-primary); border-radius: var(--radius-md); padding: 20px; border: 1px solid var(--border-subtle); max-width: 800px; margin: 0 auto;" >
             <h2 style="margin-bottom: 20px; font-size: 1.25rem;">Recent Activity</h2>
     `;
 
@@ -661,7 +700,7 @@ function renderActivityLog() {
                         <i class="fa-solid fa-user" style="margin-right: 5px;"></i>${log.user}
                     </div>
                 </li>
-            `;
+        `;
         });
         html += `</ul>`;
     }
@@ -698,7 +737,7 @@ function renderPhase(phaseId) {
             </button>
         </div>
         <div class="kanban-board">
-    `;
+            `;
 
     Object.keys(columns).forEach(colKey => {
         const col = columns[colKey];
@@ -709,7 +748,7 @@ function renderPhase(phaseId) {
                     <span class="kanban-count">${col.items.length}</span>
                 </div>
                 <div class="kanban-column-content" data-column-status="${col.id}">
-        `;
+                    `;
 
         col.items.forEach(sp => {
             // Determine avatar initials based on responsibility
@@ -717,53 +756,53 @@ function renderPhase(phaseId) {
             const notes = sp.notes || '';
 
             html += `
-                <div class="kanban-card" draggable="true" data-subphase="${sp.id}" data-phase="${phase.id}">
-                    <div class="card-header">
-                        <span class="card-id">${sp.id}</span>
-                        <div style="display: flex; gap: 8px;">
-                            <div class="status-badge ${sp.status}" style="font-size: 0.65rem; padding: 2px 6px;">
-                                ${sp.status}
+                    <div class="kanban-card" draggable="true" data-subphase="${sp.id}" data-phase="${phase.id}">
+                        <div class="card-header">
+                            <span class="card-id">${sp.id}</span>
+                            <div style="display: flex; gap: 8px;">
+                                <div class="status-badge ${sp.status}" style="font-size: 0.65rem; padding: 2px 6px;">
+                                    ${sp.status}
+                                </div>
+                                <button class="btn-card-action edit-card-btn" data-subphase="${sp.id}" data-phase="${phase.id}" title="Edit Card" style="background: none; border: none; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
+                                    <i class="fa-solid fa-pencil"></i>
+                                </button>
+                                <button class="btn-card-action delete-card-btn" data-subphase="${sp.id}" data-phase="${phase.id}" title="Delete Card" style="background: none; border: none; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
                             </div>
-                            <button class="btn-card-action edit-card-btn" data-subphase="${sp.id}" data-phase="${phase.id}" title="Edit Card" style="background: none; border: none; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
-                                <i class="fa-solid fa-pencil"></i>
-                            </button>
-                            <button class="btn-card-action delete-card-btn" data-subphase="${sp.id}" data-phase="${phase.id}" title="Delete Card" style="background: none; border: none; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                        </div>
+                        <h4 class="card-title">${sp.title}</h4>
+
+                        <div class="card-meta">
+                            <div><i class="fa-regular fa-calendar-days"></i> ${sp.timeline}</div>
+                        </div>
+
+                        <div class="card-notes-container">
+                            <textarea class="card-notes" data-subphase="${sp.id}" data-phase="${phase.id}" placeholder="Add notes...">${notes}</textarea>
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="card-assignee" title="${sp.keyResponsibility}">
+                                <div class="card-assignee-avatar">${initials}</div>
+                                <span>${sp.keyResponsibility.split(' ')[0]}</span>
+                            </div>
+                            <div class="card-actions">
+                                <button class="status-toggle-btn btn-prev" data-subphase="${sp.id}" data-phase="${phase.id}" title="Previous State">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                </button>
+                                <button class="status-toggle-btn btn-next" data-subphase="${sp.id}" data-phase="${phase.id}" title="Next State">
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <h4 class="card-title">${sp.title}</h4>
-                    
-                    <div class="card-meta">
-                        <div><i class="fa-regular fa-calendar-days"></i> ${sp.timeline}</div>
-                    </div>
-                    
-                    <div class="card-notes-container">
-                        <textarea class="card-notes" data-subphase="${sp.id}" data-phase="${phase.id}" placeholder="Add notes...">${notes}</textarea>
-                    </div>
-                    
-                    <div class="card-footer">
-                        <div class="card-assignee" title="${sp.keyResponsibility}">
-                            <div class="card-assignee-avatar">${initials}</div>
-                            <span>${sp.keyResponsibility.split(' ')[0]}</span>
-                        </div>
-                        <div class="card-actions">
-                            <button class="status-toggle-btn btn-prev" data-subphase="${sp.id}" data-phase="${phase.id}" title="Previous State">
-                                <i class="fa-solid fa-arrow-left"></i>
-                            </button>
-                            <button class="status-toggle-btn btn-next" data-subphase="${sp.id}" data-phase="${phase.id}" title="Next State">
-                                <i class="fa-solid fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
+                    `;
         });
 
         html += `
                 </div>
             </div>
-        `;
+            `;
     });
 
     html += `</div>`;
@@ -793,7 +832,7 @@ function renderPhase(phaseId) {
             const subPhase = phase.subPhases.find(sp => sp.id === subPhaseId);
             if (subPhase) {
                 subPhase.notes = e.target.value;
-                logActivity('Updated Notes', `On card: ${subPhase.title}`);
+                logActivity('Updated Notes', `On card: ${subPhase.title} `);
                 saveData();
             }
         });
@@ -918,7 +957,7 @@ function showModal(contentElement) {
                     }
                 });
                 const nextLetter = String.fromCharCode(maxCharCode + 1);
-                const newId = `${phaseNumber}${nextLetter}`;
+                const newId = `${phaseNumber}${nextLetter} `;
 
                 // Create new
                 targetPhase.subPhases.push({
@@ -974,7 +1013,7 @@ function showModal(contentElement) {
 
             // Generate sequential ID like VID-001
             const count = projectData.videos.length + 1;
-            const newId = `VID-${count.toString().padStart(3, '0')}`;
+            const newId = `VID - ${count.toString().padStart(3, '0')} `;
 
             projectData.videos.push({
                 id: newId,
@@ -1050,42 +1089,44 @@ function renderVideosView() {
     DOM.pageSubtitle.textContent = 'Pipeline for monthly videos';
 
     const columns = [
-        { id: 'pre-production', title: 'Pre-production', items: [] },
-        { id: 'production', title: 'Production', items: [] },
-        { id: 'post-production', title: 'Post-production', items: [] },
-        { id: 'completed', title: 'Completed', items: [] }
+        { id: 'post-production', title: 'Post-production', color: '#3b82f6', items: [] },
+        { id: 'under-change', title: 'Under Change', color: '#f59e0b', items: [] },
+        { id: 'approved', title: 'Approved', color: '#10b981', items: [] }
     ];
 
-    // Categorize videos into columns
+    // Any legacy statuses (pre-production, production, completed) fall into post-production
     projectData.videos.forEach(v => {
+        if (v.status === 'pre-production' || v.status === 'production' || v.status === 'completed') {
+            v.status = 'post-production';
+        }
         const col = columns.find(c => c.id === v.status);
         if (col) col.items.push(v);
     });
 
     let html = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <p>Drag videos between stages to update progress. Mark as Completed when post-production finishes.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Move videos between stages.</p>
             <button class="btn btn-outline" id="add-video-btn" style="background-color: var(--bg-elevated); color: var(--text-primary); padding: 8px 16px; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-plus"></i> Add Video Card
             </button>
         </div>
         <div class="kanban-board">
-    `;
+            `;
 
     columns.forEach(col => {
         html += `
-            <div class="kanban-column">
+            <div class="kanban-column" style="border-top: 3px solid ${col.color};">
                 <div class="kanban-column-header">
-                    <span>${col.title}</span>
+                    <span style="color:${col.color};">${col.title}</span>
                     <span class="kanban-count">${col.items.length}</span>
                 </div>
                 <div class="kanban-column-content" data-column-status="${col.id}">
         `;
 
         col.items.forEach(v => {
-            let badgeClass = 'pending';
-            if (v.status === 'production' || v.status === 'post-production') badgeClass = 'progress';
-            if (v.status === 'completed') badgeClass = 'completed';
+            let badgeClass = 'progress';
+            if (v.status === 'under-change') badgeClass = 'pending';
+            if (v.status === 'approved') badgeClass = 'completed';
 
             // Check for link existence to render either an "Add Link" or "View Link" UI
             let linkHtml = '';
@@ -1097,39 +1138,39 @@ function renderVideosView() {
             }
 
             html += `
-                <div class="kanban-card video-card" draggable="true" data-videoid="${v.id}">
-                    <div class="card-header" style="margin-bottom: 5px;">
-                        <span class="card-id">${v.id}</span>
-                        <div style="display: flex; gap: 8px;">
-                            <div class="status-badge ${badgeClass}" style="font-size: 0.65rem; padding: 2px 6px;">
-                                ${col.title}
-                            </div>
-                            <button class="btn-card-action delete-video-btn" data-videoid="${v.id}" title="Delete Video" style="background: none; border: none; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+            <div class="kanban-card video-card" draggable="true" data-videoid="${v.id}">
+                <div class="card-header" style="margin-bottom: 5px;">
+                    <span class="card-id">${v.id}</span>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="status-badge ${badgeClass}" style="font-size: 0.65rem; padding: 2px 6px;">
+                            ${col.title}
                         </div>
-                    </div>
-                    <h4 class="card-title" style="margin-bottom: 8px;">${v.title}</h4>
-                    <textarea class="video-notes-input" data-videoid="${v.id}" placeholder="Add notes or changes here..." rows="2" style="width: 100%; border: none; background: transparent; color: var(--text-secondary); font-size: 0.85rem; resize: vertical; margin-bottom: 8px; font-family: inherit; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 4px;">${v.notes || ''}</textarea>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; border-top: 1px solid var(--border-subtle); padding-top: 8px; margin-top:auto;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            ${linkHtml}
-                        </div>
-                        <div class="card-actions">
-                            <button class="status-toggle-video-btn btn-video-prev" data-videoid="${v.id}" title="Previous Stage" style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">
-                                <i class="fa-solid fa-arrow-left"></i>
-                            </button>
-                            <button class="status-toggle-video-btn btn-video-next" data-videoid="${v.id}" title="Next Stage" style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">
-                                <i class="fa-solid fa-arrow-right"></i>
-                            </button>
-                        </div>
+                        <button class="btn-card-action delete-video-btn" data-videoid="${v.id}" title="Delete Video" style="background: none; border: none; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </div>
+                <h4 class="card-title" style="margin-bottom: 8px;">${v.title}</h4>
+                <textarea class="video-notes-input" data-videoid="${v.id}" placeholder="Add notes or changes here..." rows="2" style="width: 100%; border: none; background: transparent; color: var(--text-secondary); font-size: 0.85rem; resize: vertical; margin-bottom: 8px; font-family: inherit; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 4px;">${v.notes || ''}</textarea>
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; border-top: 1px solid var(--border-subtle); padding-top: 8px; margin-top:auto;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        ${linkHtml}
+                    </div>
+                    <div class="card-actions">
+                        <button class="status-toggle-video-btn btn-video-prev" data-videoid="${v.id}" title="Previous Stage" style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <button class="status-toggle-video-btn btn-video-next" data-videoid="${v.id}" title="Next Stage" style="background: var(--bg-secondary); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
             `;
         });
 
         html += `
-                </div>
+        </div>
             </div>
         `;
     });
@@ -1162,7 +1203,7 @@ function renderVideosView() {
             const video = projectData.videos.find(x => x.id === vId);
             if (video) {
                 video.notes = e.target.value.trim();
-                logActivity(`Updated notes on video ${video.title}`, video.notes);
+                logActivity(`Updated notes on video ${video.title} `, video.notes);
                 saveData();
             }
         });
@@ -1174,9 +1215,6 @@ function renderVideosView() {
     });
 
     document.getElementById('add-video-btn').addEventListener('click', () => {
-        document.getElementById('video-title').value = '';
-        document.getElementById('video-stage').value = 'pre-production';
-        document.getElementById('video-keep-open').checked = false;
         showModal(document.getElementById('video-form'));
     });
 
@@ -1219,8 +1257,9 @@ function changeVideoStatusDirection(videoId, direction) {
     const video = projectData.videos.find(v => v.id === videoId);
     if (!video) return;
 
-    const flow = ['pre-production', 'production', 'post-production', 'completed'];
+    const flow = ['post-production', 'under-change', 'approved'];
     let currentIndex = flow.indexOf(video.status);
+    if (currentIndex === -1) currentIndex = 0; // legacy fallback
     let newIndex = currentIndex + direction;
 
     if (newIndex >= 0 && newIndex < flow.length) {
@@ -1238,7 +1277,7 @@ function updateVideoStatus(videoId, newStatus) {
         syncToCalendar('Video Tracker', video.title);
     }
 
-    logActivity(`Changed video stage to ${newStatus}`, video.title);
+    logActivity(`Changed video stage to ${newStatus} `, video.title);
     saveData();
     renderVideosView();
 }
@@ -1337,7 +1376,7 @@ function updateStatus(phaseId, subPhaseId, newStatus) {
         syncToCalendar(phase.title, subPhase.title);
     }
 
-    logActivity(`Changed status to ${newStatus}`, subPhase.title);
+    logActivity(`Changed status to ${newStatus} `, subPhase.title);
 
     // Re-render current view and update overall progress
     saveData();
@@ -1362,7 +1401,7 @@ function setupSearch() {
 
         // Timeout to allow DOM rendering before scrolling
         setTimeout(() => {
-            const cardSelector = isVideo ? `.video-card[data-videoid="${item.id}"]` : `.kanban-card[data-subphase="${item.id}"]`;
+            const cardSelector = isVideo ? `.video - card[data - videoid="${item.id}"]` : `.kanban - card[data - subphase="${item.id}"]`;
             const cardEl = document.querySelector(cardSelector);
 
             if (cardEl) {
@@ -1428,12 +1467,12 @@ function setupSearch() {
                     const li = document.createElement('li');
                     li.className = 'search-dropdown-item';
                     li.innerHTML = `
-                        <div class="search-item-title">${res.title}</div>
-                        <div class="search-item-meta">
-                            <span>${res.subtitle}</span>
-                            <span class="search-tag">${res.isVideo ? 'Video' : 'Task'}</span>
-                        </div>
-                    `;
+        < div class="search-item-title" > ${res.title}</div >
+            <div class="search-item-meta">
+                <span>${res.subtitle}</span>
+                <span class="search-tag">${res.isVideo ? 'Video' : 'Task'}</span>
+            </div>
+    `;
                     // Bind click event to specific result
                     li.addEventListener('mousedown', () => { // mousedown fires before blur
                         executeSearchNavigation(res.item, res.isVideo, res.targetPhaseId);
@@ -1474,20 +1513,9 @@ function setupSearch() {
     });
 }
 
-// Update Overall Progress
+// Update Overall Progress (Removed from UI per request)
 function updateOverallProgress() {
-    let totalSubPhases = 0;
-    let completedSubPhases = 0;
-
-    projectData.phases.forEach(phase => {
-        const relevantSubPhases = phase.subPhases;
-        totalSubPhases += relevantSubPhases.length;
-        completedSubPhases += relevantSubPhases.filter(sp => sp.status === 'completed').length;
-    });
-
-    const percentage = totalSubPhases === 0 ? 0 : Math.round((completedSubPhases / totalSubPhases) * 100);
-    DOM.overallProgressBar.style.width = `${percentage}% `;
-    DOM.overallProgressText.textContent = `${percentage}% `;
+    // No-op
 }
 
 // Setup Event Listeners
@@ -1603,7 +1631,7 @@ function setupEventListeners() {
 
             // Generate an ID based on next number
             const nextVidNumber = projectData.videos.length + 1;
-            const newId = `VID-${String(nextVidNumber).padStart(3, '0')}`;
+            const newId = `VID - ${String(nextVidNumber).padStart(3, '0')} `;
 
             projectData.videos.push({
                 id: newId,
