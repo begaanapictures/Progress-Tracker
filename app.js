@@ -129,6 +129,8 @@ const ALLOWED_EMAILS = [
     'begaana.rahulkotha@gmail.com',
     '4kotha@gmail.com',
     'shubhamgavhane1337@gmail.com',
+    'alihaider786671@gmail.com',
+    'nairmohit05@gmail.com',
     'rahul@begaanapictures.com'
 ];
 
