@@ -63,7 +63,8 @@ const emptyProjectData = {
         { id: 'phase3', title: 'Review', description: 'Editing, upload, and final review', icon: 'fa-photo-film', subPhases: JSON.parse(JSON.stringify(defaultProjectData.phases[2].subPhases)) }
     ],
     videos: [],
-    activityLog: []
+    activityLog: [],
+    progressHistory: []
 };
 
 // ==========================================
@@ -124,6 +125,13 @@ let currentState = {
 // --- AUTHENTICATION & ACCESS CONTROL ---
 // EDIT THIS LIST TO RESTRICT ACCESS
 const ALLOWED_EMAILS = [
+    'rahulkotha00@gmail.com',
+    'kotharahul96@gmail.com',
+    'begaana.rahulkotha@gmail.com',
+    'rahul@begaanapictures.com'
+];
+
+const ADMIN_EMAILS = [
     'rahulkotha00@gmail.com',
     'kotharahul96@gmail.com',
     'begaana.rahulkotha@gmail.com',
@@ -266,6 +274,8 @@ function initApp() {
                 renderVideoDashboard();
             } else if (currentState.activePhaseId === 'activity-log') {
                 renderActivityLog();
+            } else if (currentState.activePhaseId === 'progress-history') {
+                renderProgressHistory();
             } else {
                 renderPhase(currentState.activePhaseId);
             }
@@ -281,6 +291,7 @@ function initApp() {
 function runMigrations() {
     if (!projectData.activityLog) projectData.activityLog = [];
     if (!projectData.videos) projectData.videos = [];
+    if (!projectData.progressHistory) projectData.progressHistory = [];
 
     // Ensure phase title renames
     if (projectData.phases && (projectData.phases[0].title === 'Pre-production' || projectData.phases[0].title === 'Pre Production')) {
@@ -347,6 +358,15 @@ function renderSidebar() {
         </a>
     `;
     DOM.navLinks.appendChild(dashboardLi);
+
+    const historyLi = document.createElement('li');
+    historyLi.innerHTML = `
+        <a href="#" class="nav-item ${currentState.activePhaseId === 'progress-history' ? 'active' : ''}" data-target="progress-history">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Progress History</span>
+        </a>
+    `;
+    DOM.navLinks.appendChild(historyLi);
 
     // Phase links removed as requested.
 
@@ -603,6 +623,7 @@ function renderVideoDashboard() {
     const approvedVideos = projectData.videos.filter(v => v.status === 'approved').length;
     const postProdVideos = projectData.videos.filter(v => v.status === 'post-production').length;
     const underChangeVideos = projectData.videos.filter(v => v.status === 'under-change').length;
+    const sentApprovalVideos = projectData.videos.filter(v => v.status === 'sent-approval').length;
 
     const percentage = totalVideos === 0 ? 0 : Math.round((approvedVideos / totalVideos) * 100);
 
@@ -614,6 +635,7 @@ function renderVideoDashboard() {
     const statCards = [
         { label: 'Post-production', count: postProdVideos, icon: 'fa-photo-film', color: '#3b82f6', status: 'progress' },
         { label: 'Under Change', count: underChangeVideos, icon: 'fa-rotate', color: '#f59e0b', status: 'pending' },
+        { label: 'Sent for Approval', count: sentApprovalVideos, icon: 'fa-paper-plane', color: '#8b5cf6', status: 'progress' },
         { label: 'Approved', count: approvedVideos, icon: 'fa-circle-check', color: '#10b981', status: 'completed' },
     ];
 
@@ -708,6 +730,53 @@ function renderActivityLog() {
         `;
         });
         html += `</ul>`;
+    }
+
+    html += `</div>`;
+    DOM.contentBody.innerHTML = html;
+}
+
+// Render Progress History Record
+function renderProgressHistory() {
+    DOM.pageTitle.textContent = 'Progress History';
+    DOM.pageSubtitle.textContent = 'Archive of completed weekly and monthly sprints';
+
+    let html = `
+        <div style="background-color: var(--bg-primary); border-radius: var(--radius-md); padding: 20px; border: 1px solid var(--border-subtle); max-width: 800px; margin: 0 auto;">
+            <h2 style="margin-bottom: 20px; font-size: 1.25rem;">Archived Progress</h2>
+    `;
+
+    if (!projectData.progressHistory || projectData.progressHistory.length === 0) {
+        html += `<p style="color: var(--text-muted); text-align: center; padding: 40px;">No historical progress recorded yet. Start a new week to save current progress.</p>`;
+    } else {
+        html += `<div style="display: flex; flex-direction: column; gap: 15px;">`;
+        // Sort newest first
+        const sortedHistory = [...projectData.progressHistory].sort((a, b) => new Date(b.dateSaved) - new Date(a.dateSaved));
+
+        sortedHistory.forEach(record => {
+            const date = new Date(record.dateSaved);
+            const dateString = isNaN(date.getTime()) ? 'Unknown Date' : date.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            html += `
+                <div style="padding: 15px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-secondary);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <strong style="color: var(--text-primary); font-size: 1rem;"><i class="fa-regular fa-calendar-check" style="margin-right: 8px; color: var(--status-progress);"></i>${dateString}</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Reset by ${record.resetBy}</span>
+                    </div>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Pre-prod Tasks Done</div>
+                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">${record.planningTasksDone} / ${record.planningTasksTotal}</div>
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Videos Approved</div>
+                            <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">${record.videosApproved} / ${record.videosTotal}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
     }
 
     html += `</div>`;
@@ -1096,6 +1165,7 @@ function renderVideosView() {
     const columns = [
         { id: 'post-production', title: 'Post-production', color: '#3b82f6', items: [] },
         { id: 'under-change', title: 'Under Change', color: '#f59e0b', items: [] },
+        { id: 'sent-approval', title: 'Sent for Approval', color: '#8b5cf6', items: [] },
         { id: 'approved', title: 'Approved', color: '#10b981', items: [] }
     ];
 
@@ -1131,6 +1201,7 @@ function renderVideosView() {
         col.items.forEach(v => {
             let badgeClass = 'progress';
             if (v.status === 'under-change') badgeClass = 'pending';
+            if (v.status === 'sent-approval') badgeClass = 'pending';
             if (v.status === 'approved') badgeClass = 'completed';
 
             // Check for link existence to render either an "Add Link" or "View Link" UI
@@ -1262,7 +1333,7 @@ function changeVideoStatusDirection(videoId, direction) {
     const video = projectData.videos.find(v => v.id === videoId);
     if (!video) return;
 
-    const flow = ['post-production', 'under-change', 'approved'];
+    const flow = ['post-production', 'under-change', 'sent-approval', 'approved'];
     let currentIndex = flow.indexOf(video.status);
     if (currentIndex === -1) currentIndex = 0; // legacy fallback
     let newIndex = currentIndex + direction;
@@ -1349,6 +1420,8 @@ function navigateToPhase(phaseId) {
         renderVideosView();
     } else if (phaseId === 'activity-log') {
         renderActivityLog();
+    } else if (phaseId === 'progress-history') {
+        renderProgressHistory();
     } else {
         renderPhase(phaseId);
     }
@@ -1472,7 +1545,7 @@ function setupSearch() {
                     const li = document.createElement('li');
                     li.className = 'search-dropdown-item';
                     li.innerHTML = `
-        < div class="search-item-title" > ${res.title}</div >
+        <div class="search-item-title">${res.title}</div>
             <div class="search-item-meta">
                 <span>${res.subtitle}</span>
                 <span class="search-tag">${res.isVideo ? 'Video' : 'Task'}</span>
@@ -1564,9 +1637,42 @@ function setupEventListeners() {
     const refreshBtn = document.getElementById('refresh-week');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
-            if (confirm("Start a new week? This will clear all data and start a fresh board.")) {
+            // Admin Check
+            const userEmail = currentState.currentUser ? currentState.currentUser.email : null;
+            if (!userEmail || !ADMIN_EMAILS.includes(userEmail)) {
+                alert("Access Denied: Only administrators can wipe the board and start a new week.");
+                return;
+            }
+
+            if (confirm("Start a new week? This will archive current metrics and start a fresh board.")) {
+
+                // Harvest existing progress metrics before wipe
+                const planningTotal = projectData.phases[0].subPhases.length;
+                const planningDone = projectData.phases[0].subPhases.filter(sp => sp.status === 'completed').length;
+
+                const vidTotal = projectData.videos.length;
+                const vidDone = projectData.videos.filter(v => v.status === 'approved').length;
+
+                const archivedRecord = {
+                    dateSaved: new Date().toISOString(),
+                    resetBy: currentState.currentUser.name || 'Admin',
+                    planningTasksTotal: planningTotal,
+                    planningTasksDone: planningDone,
+                    videosTotal: vidTotal,
+                    videosApproved: vidDone
+                };
+
+                // Retain historical arrays across the reset
+                const oldHistory = projectData.progressHistory || [];
+                const oldLogs = projectData.activityLog || [];
+
+                oldHistory.push(archivedRecord);
+
                 projectData = JSON.parse(JSON.stringify(emptyProjectData));
-                logActivity('Started New Week', 'Board reset');
+                projectData.progressHistory = oldHistory;
+                projectData.activityLog = oldLogs;
+
+                logActivity('Started New Week', 'Archived previous metrics and cleared board');
                 saveData();
                 renderDashboard();
                 if (currentState.activePhaseId) renderPhase(currentState.activePhaseId);
@@ -1816,5 +1922,3 @@ async function scheduleWeeklyMeetings() {
     }
     if (createdCount > 0) alert(`Successfully scheduled ${createdCount} calls for this week in Google Calendar!`);
 }
-
-
