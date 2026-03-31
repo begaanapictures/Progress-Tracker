@@ -133,14 +133,7 @@ const ALLOWED_EMAILS = [
 
 const ADMIN_EMAILS = [
     'rahulkotha00@gmail.com',
-    'kotharahul96@gmail.com',
-    'begaana.rahulkotha@gmail.com',
-    '4kotha@gmail.com',
-    'shubhamgavhane1337@gmail.com',
-    'alihaider786671@gmail.com',
-    'nairmohit05@gmail.com',
-    'vedantajaydesai@gmail.com',
-    'rahul@begaanapictures.com'
+    'kotharahul96@gmail.com'
 ];
 
 function handleCredentialResponse(response) {
@@ -1085,9 +1078,16 @@ function showModal(contentElement) {
                 return;
             }
 
-            // Generate sequential ID like VID-001
-            const count = projectData.videos.length + 1;
-            const newId = `VID - ${count.toString().padStart(3, '0')} `;
+            // Generate robust sequential ID like VID-001 by finding max
+            let maxVidNumber = 0;
+            projectData.videos.forEach(v => {
+                const match = v.id.match(/VID\s*-\s*(\d+)/i);
+                if (match) {
+                    const num = parseInt(match[1]);
+                    if (num > maxVidNumber) maxVidNumber = num;
+                }
+            });
+            const newId = `VID - ${String(maxVidNumber + 1).padStart(3, '0')} `;
 
             projectData.videos.push({
                 id: newId,
@@ -1122,7 +1122,12 @@ function setupDragAndDrop() {
     const columns = document.querySelectorAll('.kanban-column-content');
 
     cards.forEach(card => {
-        card.addEventListener('dragstart', () => {
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                phaseId: card.getAttribute('data-phase'),
+                subPhaseId: card.getAttribute('data-subphase')
+            }));
+            e.dataTransfer.effectAllowed = 'move';
             card.classList.add('dragging');
         });
         card.addEventListener('dragend', () => {
@@ -1142,12 +1147,29 @@ function setupDragAndDrop() {
             e.preventDefault();
             col.classList.remove('drag-over');
 
-            const draggingCard = document.querySelector('.dragging');
-            if (draggingCard) {
-                const phaseId = draggingCard.getAttribute('data-phase');
-                const subPhaseId = draggingCard.getAttribute('data-subphase');
-                const newStatus = col.getAttribute('data-column-status');
+            let phaseId = null;
+            let subPhaseId = null;
+            const dragData = e.dataTransfer.getData('text/plain');
+            if (dragData) {
+                try {
+                    const parsed = JSON.parse(dragData);
+                    phaseId = parsed.phaseId;
+                    subPhaseId = parsed.subPhaseId;
+                } catch (err) {
+                    console.warn('Invalid drag data', err);
+                }
+            }
 
+            if (!phaseId || !subPhaseId) {
+                const draggingCard = document.querySelector('.dragging');
+                if (draggingCard) {
+                    phaseId = draggingCard.getAttribute('data-phase');
+                    subPhaseId = draggingCard.getAttribute('data-subphase');
+                }
+            }
+
+            if (phaseId && subPhaseId) {
+                const newStatus = col.getAttribute('data-column-status');
                 updateStatus(phaseId, subPhaseId, newStatus);
             }
         });
@@ -1363,7 +1385,9 @@ function setupVideoDragAndDrop() {
     const columns = document.querySelectorAll('.kanban-column-content');
 
     cards.forEach(card => {
-        card.addEventListener('dragstart', () => {
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', card.getAttribute('data-videoid'));
+            e.dataTransfer.effectAllowed = 'move';
             card.classList.add('dragging');
         });
         card.addEventListener('dragend', () => {
@@ -1383,9 +1407,15 @@ function setupVideoDragAndDrop() {
             e.preventDefault();
             col.classList.remove('drag-over');
 
-            const draggingCard = document.querySelector('.dragging');
-            if (draggingCard && draggingCard.classList.contains('video-card')) {
-                const videoId = draggingCard.getAttribute('data-videoid');
+            let videoId = e.dataTransfer.getData('text/plain');
+            if (!videoId) {
+                const draggingCard = document.querySelector('.dragging');
+                if (draggingCard && draggingCard.classList.contains('video-card')) {
+                    videoId = draggingCard.getAttribute('data-videoid');
+                }
+            }
+
+            if (videoId) {
                 const newStatus = col.getAttribute('data-column-status');
                 updateVideoStatus(videoId, newStatus);
             }
@@ -1740,9 +1770,16 @@ function setupEventListeners() {
                 return;
             }
 
-            // Generate an ID based on next number
-            const nextVidNumber = projectData.videos.length + 1;
-            const newId = `VID - ${String(nextVidNumber).padStart(3, '0')} `;
+            // Generate robust sequential ID based on next numeric number
+            let maxVidNumber = 0;
+            projectData.videos.forEach(v => {
+                const match = v.id.match(/VID\s*-\s*(\d+)/i);
+                if (match) {
+                    const num = parseInt(match[1]);
+                    if (num > maxVidNumber) maxVidNumber = num;
+                }
+            });
+            const newId = `VID - ${String(maxVidNumber + 1).padStart(3, '0')} `;
 
             projectData.videos.push({
                 id: newId,
