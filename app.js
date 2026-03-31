@@ -248,7 +248,6 @@ function initApp() {
         renderDashboard();
         updateOverallProgress();
         setupEventListeners();
-        loadGoogleCalendarAPI();
 
         // Now listen for real-time changes from OTHER devices
         // We use 'value' but skip the very first call (already handled above)
@@ -1024,7 +1023,7 @@ function showModal(contentElement) {
                     }
                 });
                 const nextLetter = String.fromCharCode(maxCharCode + 1);
-                const newId = `${phaseNumber}${nextLetter} `;
+                const newId = `${phaseNumber}${nextLetter}`;
 
                 // Create new
                 targetPhase.subPhases.push({
@@ -1087,7 +1086,7 @@ function showModal(contentElement) {
                     if (num > maxVidNumber) maxVidNumber = num;
                 }
             });
-            const newId = `VID - ${String(maxVidNumber + 1).padStart(3, '0')} `;
+            const newId = `VID-${String(maxVidNumber + 1).padStart(3, '0')}`;
 
             projectData.videos.push({
                 id: newId,
@@ -1352,7 +1351,7 @@ function renderVideosView() {
 
 
 function changeVideoStatusDirection(videoId, direction) {
-    const video = projectData.videos.find(v => v.id === videoId);
+    const video = projectData.videos.find(v => v.id.trim() === videoId.trim());
     if (!video) return;
 
     const flow = ['post-production', 'under-change', 'sent-approval', 'approved'];
@@ -1366,7 +1365,7 @@ function changeVideoStatusDirection(videoId, direction) {
 }
 
 function updateVideoStatus(videoId, newStatus) {
-    const video = projectData.videos.find(v => v.id === videoId);
+    const video = projectData.videos.find(v => v.id.trim() === videoId.trim());
     if (!video || video.status === newStatus) return;
 
     video.status = newStatus;
@@ -1375,8 +1374,7 @@ function updateVideoStatus(videoId, newStatus) {
         syncToCalendar('Video Tracker', video.title);
     }
 
-    logActivity(`Changed video stage to ${newStatus} `, video.title);
-    saveData();
+    logActivity(`Changed video stage to ${newStatus}`, video.title);
     renderVideosView();
 }
 
@@ -1460,7 +1458,8 @@ function navigateToPhase(phaseId) {
 // Change Status based on direction (-1 for Prev, 1 for Next)
 function changeStatusDirection(phaseId, subPhaseId, direction) {
     const phase = projectData.phases.find(p => p.id === phaseId);
-    const subPhase = phase.subPhases.find(sp => sp.id === subPhaseId);
+    if (!phase) return;
+    const subPhase = phase.subPhases.find(sp => sp.id.trim() === subPhaseId.trim());
     if (!subPhase) return;
 
     const flow = ['pending', 'progress', 'completed'];
@@ -1475,7 +1474,8 @@ function changeStatusDirection(phaseId, subPhaseId, direction) {
 // Update specific status and trigger handlers
 function updateStatus(phaseId, subPhaseId, newStatus) {
     const phase = projectData.phases.find(p => p.id === phaseId);
-    const subPhase = phase.subPhases.find(sp => sp.id === subPhaseId);
+    if (!phase) return;
+    const subPhase = phase.subPhases.find(sp => sp.id.trim() === subPhaseId.trim());
     if (!subPhase || subPhase.status === newStatus) return;
 
     subPhase.status = newStatus;
@@ -1484,10 +1484,10 @@ function updateStatus(phaseId, subPhaseId, newStatus) {
         syncToCalendar(phase.title, subPhase.title);
     }
 
-    logActivity(`Changed status to ${newStatus} `, subPhase.title);
+    logActivity(`Changed status to ${newStatus}`, subPhase.title);
 
     // Re-render current view and update overall progress
-    saveData();
+
     renderPhase(phaseId);
     updateOverallProgress();
 }
@@ -1779,7 +1779,7 @@ function setupEventListeners() {
                     if (num > maxVidNumber) maxVidNumber = num;
                 }
             });
-            const newId = `VID - ${String(maxVidNumber + 1).padStart(3, '0')} `;
+            const newId = `VID-${String(maxVidNumber + 1).padStart(3, '0')}`;
 
             projectData.videos.push({
                 id: newId,
