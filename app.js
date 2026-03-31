@@ -1135,6 +1135,7 @@ function setupDragAndDrop() {
     });
 
     columns.forEach(col => {
+        col.addEventListener('dragenter', e => e.preventDefault());
         col.addEventListener('dragover', e => {
             e.preventDefault(); // Necessary to allow drop
             col.classList.add('drag-over');
@@ -1351,7 +1352,8 @@ function renderVideosView() {
 
 
 function changeVideoStatusDirection(videoId, direction) {
-    const video = projectData.videos.find(v => v.id.trim() === videoId.trim());
+    if (!videoId) return;
+    const video = projectData.videos.find(v => v && v.id && String(v.id).replace(/\s+/g,'') === String(videoId).replace(/\s+/g,''));
     if (!video) return;
 
     const flow = ['post-production', 'under-change', 'sent-approval', 'approved'];
@@ -1365,7 +1367,8 @@ function changeVideoStatusDirection(videoId, direction) {
 }
 
 function updateVideoStatus(videoId, newStatus) {
-    const video = projectData.videos.find(v => v.id.trim() === videoId.trim());
+    if (!videoId) return;
+    const video = projectData.videos.find(v => v && v.id && String(v.id).replace(/\s+/g,'') === String(videoId).replace(/\s+/g,''));
     if (!video || video.status === newStatus) return;
 
     video.status = newStatus;
@@ -1394,6 +1397,7 @@ function setupVideoDragAndDrop() {
     });
 
     columns.forEach(col => {
+        col.addEventListener('dragenter', e => e.preventDefault());
         col.addEventListener('dragover', e => {
             e.preventDefault();
             col.classList.add('drag-over');
@@ -1457,9 +1461,10 @@ function navigateToPhase(phaseId) {
 
 // Change Status based on direction (-1 for Prev, 1 for Next)
 function changeStatusDirection(phaseId, subPhaseId, direction) {
-    const phase = projectData.phases.find(p => p.id === phaseId);
+    if (!phaseId || !subPhaseId) return;
+    const phase = projectData.phases.find(p => p && p.id === phaseId);
     if (!phase) return;
-    const subPhase = phase.subPhases.find(sp => sp.id.trim() === subPhaseId.trim());
+    const subPhase = phase.subPhases.find(sp => sp && sp.id && String(sp.id).replace(/\s+/g,'') === String(subPhaseId).replace(/\s+/g,''));
     if (!subPhase) return;
 
     const flow = ['pending', 'progress', 'completed'];
@@ -1473,9 +1478,10 @@ function changeStatusDirection(phaseId, subPhaseId, direction) {
 
 // Update specific status and trigger handlers
 function updateStatus(phaseId, subPhaseId, newStatus) {
-    const phase = projectData.phases.find(p => p.id === phaseId);
+    if (!phaseId || !subPhaseId) return;
+    const phase = projectData.phases.find(p => p && p.id === phaseId);
     if (!phase) return;
-    const subPhase = phase.subPhases.find(sp => sp.id.trim() === subPhaseId.trim());
+    const subPhase = phase.subPhases.find(sp => sp && sp.id && String(sp.id).replace(/\s+/g,'') === String(subPhaseId).replace(/\s+/g,''));
     if (!subPhase || subPhase.status === newStatus) return;
 
     subPhase.status = newStatus;
